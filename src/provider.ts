@@ -259,7 +259,7 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 			} else if (apiMode === "anthropic") {
 				// Anthropic API mode
 				const anthropicApi = new AnthropicApi(model.id, um?.cache_control !== false);
-				const anthropicMessages = anthropicApi.convertMessages(messages, modelConfig);
+				const anthropicMessages = anthropicApi.convertMessages(messages, modelConfig, this._reasoningContentCache, this._lastReasoningContent);
 
 				// requestBody
 				let requestBody: AnthropicRequestBody = {
@@ -299,7 +299,22 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 					throw new Error("No response body from Anthropic API");
 				}
 				await anthropicApi.processStreamingResponse(response.body, trackingProgress, token);
-			} else if (apiMode === "openai-responses") {
+			// Cache the reasoning_content from this response (same as OpenAI path).
+			if (modelConfig.includeReasoningInRequest) {
+				const reasoningContent = anthropicApi.getAccumulatedReasoningContent();
+				if (reasoningContent) {
+					this._lastReasoningContent = reasoningContent;
+				}
+				const emittedIds = anthropicApi.getEmittedToolCallIds();
+				if (reasoningContent && emittedIds.length > 0) {
+					const cacheKey = emittedIds.sort().join(",");
+					this._reasoningContentCache.set(cacheKey, reasoningContent);
+					logger.debug("reasoning.cache.store.anthropic", {
+						cacheKey,
+						reasoningLength: reasoningContent.length,
+					});
+				}
+			}			} else if (apiMode === "openai-responses") {
 				// OpenAI Responses API mode
 				const openaiResponsesApi = new OpenaiResponsesApi(model.id);
 				const normalizedBaseUrl = BASE_URL.replace(/\/+$/, "");
