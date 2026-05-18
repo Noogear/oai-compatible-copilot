@@ -299,22 +299,24 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 					throw new Error("No response body from Anthropic API");
 				}
 				await anthropicApi.processStreamingResponse(response.body, trackingProgress, token);
-			// Cache the reasoning_content from this response (same as OpenAI path).
-			if (modelConfig.includeReasoningInRequest) {
-				const reasoningContent = anthropicApi.getAccumulatedReasoningContent();
-				if (reasoningContent) {
-					this._lastReasoningContent = reasoningContent;
+
+				// Cache the reasoning_content from this response (same as OpenAI path).
+				if (modelConfig.includeReasoningInRequest) {
+					const reasoningContent = anthropicApi.getAccumulatedReasoningContent();
+					if (reasoningContent) {
+						this._lastReasoningContent = reasoningContent;
+					}
+					const emittedIds = anthropicApi.getEmittedToolCallIds();
+					if (reasoningContent && emittedIds.length > 0) {
+						const cacheKey = emittedIds.sort().join(",");
+						this._reasoningContentCache.set(cacheKey, reasoningContent);
+						logger.debug("reasoning.cache.store.anthropic", {
+							cacheKey,
+							reasoningLength: reasoningContent.length,
+						});
+					}
 				}
-				const emittedIds = anthropicApi.getEmittedToolCallIds();
-				if (reasoningContent && emittedIds.length > 0) {
-					const cacheKey = emittedIds.sort().join(",");
-					this._reasoningContentCache.set(cacheKey, reasoningContent);
-					logger.debug("reasoning.cache.store.anthropic", {
-						cacheKey,
-						reasoningLength: reasoningContent.length,
-					});
-				}
-			}			} else if (apiMode === "openai-responses") {
+			} else if (apiMode === "openai-responses") {
 				// OpenAI Responses API mode
 				const openaiResponsesApi = new OpenaiResponsesApi(model.id);
 				const normalizedBaseUrl = BASE_URL.replace(/\/+$/, "");
