@@ -103,10 +103,9 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
 
 				if (modelConfig.includeReasoningInRequest) {
 					// Sanitized thinking from VS Code ThinkingPart.
-					// sanitizeThinkingContent() strips known placeholder patterns
-					// (e.g. "[reasoning]", "Next step.") that the model may have
-					// echoed from a previous turn's placeholder, preventing the
-					// pollution cascade where placeholders perpetuate themselves.
+					// sanitizeThinkingContent() strips the "Next step." placeholder
+					// if the model echoed it from a previous turn, forcing a cache
+					// lookup instead of perpetuating the echo.
 					let reasoningContent = joinedThinking;
 
 					if (!reasoningContent && reasoningContentCache && toolCalls.length > 0) {
@@ -125,12 +124,11 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
 						reasoningContent = lastReasoningContent;
 					}
 
-					// Use a single space as placeholder when all caches miss.
-					// MiMo requires reasoning_content to be non-empty (otherwise 400),
-					// but a meaningful placeholder like "[reasoning]" gets echoed back
-					// by the model in subsequent turns, polluting the thinking output.
-					// Single space is minimally meaningful and won't be echoed.
-					assistantMessage.reasoning_content = reasoningContent || " ";
+					// Use "Next step." as placeholder when all caches miss (same as upstream).
+					// MiMo requires reasoning_content to be non-empty (otherwise 400).
+					// sanitizeThinkingContent() strips this placeholder if the model echoes
+					// it back in subsequent turns, preventing pollution cascades.
+					assistantMessage.reasoning_content = reasoningContent || "Next step.";
 				}
 
 				if (toolCalls.length > 0) {

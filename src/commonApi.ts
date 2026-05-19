@@ -75,9 +75,7 @@ export abstract class CommonApi<TMessage, TRequestBody> {
 	 * so the cache lookup chain can provide the real content instead.
 	 */
 	private static readonly PLACEHOLDER_THINKING = new Set([
-		"[reasoning]",
 		"Next step.",
-		" ",
 	]);
 
 	/**
