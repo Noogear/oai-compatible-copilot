@@ -240,14 +240,19 @@ export abstract class CommonApi<TMessage, TRequestBody> {
 	}
 
 	/**
-	 * Issue #252: If the model only emitted thinking content with no text,
-	 * use the accumulated reasoning as fallback text so VS Code doesn't
-	 * show "Sorry, no response was returned."
+	 * Issue #252: If the model only emitted thinking content with no text
+	 * and no tool calls, use the accumulated reasoning as fallback text
+	 * so VS Code doesn't show "Sorry, no response was returned."
+	 *
+	 * When tool calls ARE present, the tool calls themselves constitute a
+	 * valid response — do NOT convert thinking to text in that case, as it
+	 * would leak internal reasoning into the user-visible output.
+	 *
 	 * Call this ONLY at the end of the entire message/stream, NOT at
 	 * intermediate content block boundaries.
 	 */
 	protected emitThinkingAsTextFallback(progress: Progress<LanguageModelResponsePart2>): void {
-		if (!this._hasEmittedAssistantText) {
+		if (!this._hasEmittedAssistantText && this._completedToolCallIndices.size === 0) {
 			const fallbackText = this._accumulatedReasoningContent.trim();
 			if (fallbackText) {
 				progress.report(new vscode.LanguageModelTextPart(fallbackText));
