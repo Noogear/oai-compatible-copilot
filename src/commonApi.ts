@@ -67,6 +67,40 @@ export abstract class CommonApi<TMessage, TRequestBody> {
 	 */
 	protected _accumulatedReasoningContent = "";
 
+	/**
+	 * Known placeholder strings that have been used as reasoning_content
+	 * when the real thinking content is unavailable. These get echoed back
+	 * by the model in subsequent turns, polluting the thinking output.
+	 * Any thinking content matching exactly one of these is treated as empty
+	 * so the cache lookup chain can provide the real content instead.
+	 */
+	private static readonly PLACEHOLDER_THINKING = new Set([
+		"[reasoning]",
+		"Next step.",
+		" ",
+	]);
+
+	/**
+	 * Strip known placeholder patterns from thinking content preserved by
+	 * VS Code (LanguageModelThinkingPart). If the content is exactly one
+	 * of the known placeholders (possibly from a previous turn's echo),
+	 * return empty string so the caller falls through to the reasoning cache.
+	 *
+	 * This breaks the pollution cascade where:
+	 *   placeholder sent → model echoes it → VS Code preserves it →
+	 *   next turn uses it directly → model echoes again → ∞
+	 */
+	protected static sanitizeThinkingContent(content: string): string {
+		if (!content) {
+			return "";
+		}
+		const trimmed = content.trim();
+		if (CommonApi.PLACEHOLDER_THINKING.has(trimmed)) {
+			return "";
+		}
+		return trimmed;
+	}
+
 	constructor(modelId: string) {
 		this._modelId = modelId;
 	}

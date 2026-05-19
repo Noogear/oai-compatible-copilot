@@ -87,7 +87,9 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
 			}
 
 			const joinedText = textParts.join("").trim();
-			const joinedThinking = reasoningParts.join("").trim();
+			const joinedThinking = CommonApi.sanitizeThinkingContent(
+				reasoningParts.join("")
+			);
 
 			// process assistant message
 			if (role === "assistant") {
@@ -100,8 +102,11 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
 				}
 
 				if (modelConfig.includeReasoningInRequest) {
-					// Try cache first: when VS Code doesn't preserve LanguageModelThinkingPart
-					// in conversation history, fall back to cached original reasoning_content.
+					// Sanitized thinking from VS Code ThinkingPart.
+					// sanitizeThinkingContent() strips known placeholder patterns
+					// (e.g. "[reasoning]", "Next step.") that the model may have
+					// echoed from a previous turn's placeholder, preventing the
+					// pollution cascade where placeholders perpetuate themselves.
 					let reasoningContent = joinedThinking;
 
 					if (!reasoningContent && reasoningContentCache && toolCalls.length > 0) {
@@ -124,6 +129,7 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
 					// MiMo requires reasoning_content to be non-empty (otherwise 400),
 					// but a meaningful placeholder like "[reasoning]" gets echoed back
 					// by the model in subsequent turns, polluting the thinking output.
+					// Single space is minimally meaningful and won't be echoed.
 					assistantMessage.reasoning_content = reasoningContent || " ";
 				}
 
