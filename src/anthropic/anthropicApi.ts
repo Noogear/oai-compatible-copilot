@@ -195,7 +195,7 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 				// it back in subsequent turns, preventing pollution cascades.
 				contentBlocks.push({
 					type: "thinking",
-					thinking: thinkingContent || "Next step.",
+						thinking: thinkingContent || CommonApi.PLACEHOLDER_REASONING,
 				});
 			}
 

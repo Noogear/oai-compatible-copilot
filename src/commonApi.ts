@@ -68,15 +68,11 @@ export abstract class CommonApi<TMessage, TRequestBody> {
 	protected _accumulatedReasoningContent = "";
 
 	/**
-	 * Known placeholder strings that have been used as reasoning_content
-	 * when the real thinking content is unavailable. These get echoed back
-	 * by the model in subsequent turns, polluting the thinking output.
-	 * Any thinking content matching exactly one of these is treated as empty
-	 * so the cache lookup chain can provide the real content instead.
+	 * Placeholder text used as reasoning_content when real thinking content
+	 * is unavailable. Models may echo this back in subsequent turns;
+	 * sanitizeThinkingContent() strips it to prevent the pollution cascade.
 	 */
-	private static readonly PLACEHOLDER_THINKING = new Set([
-		"Next step.",
-	]);
+	static readonly PLACEHOLDER_REASONING = "Next step.";
 
 	/**
 	 * Strip known placeholder patterns from thinking content preserved by
@@ -93,7 +89,7 @@ export abstract class CommonApi<TMessage, TRequestBody> {
 			return "";
 		}
 		const trimmed = content.trim();
-		if (CommonApi.PLACEHOLDER_THINKING.has(trimmed)) {
+		if (trimmed === CommonApi.PLACEHOLDER_REASONING) {
 			return "";
 		}
 		return trimmed;

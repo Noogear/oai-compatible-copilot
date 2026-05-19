@@ -128,7 +128,7 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
 					// MiMo requires reasoning_content to be non-empty (otherwise 400).
 					// sanitizeThinkingContent() strips this placeholder if the model echoes
 					// it back in subsequent turns, preventing pollution cascades.
-					assistantMessage.reasoning_content = reasoningContent || "Next step.";
+					assistantMessage.reasoning_content = reasoningContent || CommonApi.PLACEHOLDER_REASONING;
 				}
 
 				if (toolCalls.length > 0) {
