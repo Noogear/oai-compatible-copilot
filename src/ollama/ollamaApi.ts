@@ -232,6 +232,8 @@ export class OllamaApi extends CommonApi<OllamaMessage, OllamaRequestBody> {
 			reader.releaseLock();
 			// End any active thinking sequence
 			this.reportEndThinking(progress);
+			// Issue #252: thinking-only response fallback
+			this.emitThinkingAsTextFallback(progress);
 			// Report accumulated usage for the Context Window widget
 			this.reportUsage(progress);
 		}

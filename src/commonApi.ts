@@ -240,6 +240,23 @@ export abstract class CommonApi<TMessage, TRequestBody> {
 	}
 
 	/**
+	 * Issue #252: If the model only emitted thinking content with no text,
+	 * use the accumulated reasoning as fallback text so VS Code doesn't
+	 * show "Sorry, no response was returned."
+	 * Call this ONLY at the end of the entire message/stream, NOT at
+	 * intermediate content block boundaries.
+	 */
+	protected emitThinkingAsTextFallback(progress: Progress<LanguageModelResponsePart2>): void {
+		if (!this._hasEmittedAssistantText) {
+			const fallbackText = this._accumulatedReasoningContent.trim();
+			if (fallbackText) {
+				progress.report(new vscode.LanguageModelTextPart(fallbackText));
+				this._hasEmittedAssistantText = true;
+			}
+		}
+	}
+
+	/**
 	 * Generate a unique thinking ID based on request start time and random suffix
 	 */
 	protected generateThinkingId(): string {

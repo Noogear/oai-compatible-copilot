@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+﻿import * as vscode from "vscode";
 import {
 	CancellationToken,
 	LanguageModelChatRequestMessage,
@@ -1022,6 +1022,8 @@ export class GeminiApi extends CommonApi<GeminiChatMessage, GeminiGenerateConten
 		} finally {
 			reader.releaseLock();
 			this.reportEndThinking(progress);
+			// Issue #252: thinking-only response fallback
+			this.emitThinkingAsTextFallback(progress);
 			// Report accumulated usage for the Context Window widget
 			this.reportUsage(progress);
 		}

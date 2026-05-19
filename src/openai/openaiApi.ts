@@ -120,7 +120,7 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
 						reasoningContent = lastReasoningContent;
 					}
 
-					assistantMessage.reasoning_content = reasoningContent || "Next step.";
+					assistantMessage.reasoning_content = reasoningContent || "[reasoning]";
 				}
 
 				if (toolCalls.length > 0) {
@@ -366,6 +366,8 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
 			reader.releaseLock();
 			// If there's an active thinking sequence, end it first
 			this.reportEndThinking(progress);
+			// Issue #252: thinking-only response fallback
+			this.emitThinkingAsTextFallback(progress);
 			// Report accumulated usage for the Context Window widget
 			this.reportUsage(progress);
 		}

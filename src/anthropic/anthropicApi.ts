@@ -185,7 +185,7 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 
 				contentBlocks.push({
 					type: "thinking",
-					thinking: thinkingContent || "Next step.",
+					thinking: thinkingContent || "[reasoning]",
 				});
 			}
 
@@ -595,10 +595,16 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 				// Signature for thinking block - ignore for now
 				// Could store for verification if needed later
 			}
-		} else if (chunk.type === "content_block_stop" || chunk.type === "message_stop") {
-			// End of message - ensure thinking is ended and flush all tool calls
+		} else if (chunk.type === "content_block_stop") {
+			// End of a content block - ensure thinking is ended and flush tool calls
 			await this.flushToolCallBuffers(progress, false);
 			this.reportEndThinking(progress);
+		} else if (chunk.type === "message_stop") {
+			// End of entire message - flush and finalize
+			await this.flushToolCallBuffers(progress, false);
+			this.reportEndThinking(progress);
+			// Issue #252: thinking-only response fallback
+			this.emitThinkingAsTextFallback(progress);
 		}
 	}
 
