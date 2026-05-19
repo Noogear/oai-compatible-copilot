@@ -120,7 +120,11 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
 						reasoningContent = lastReasoningContent;
 					}
 
-					assistantMessage.reasoning_content = reasoningContent || "[reasoning]";
+					// Use a single space as placeholder when all caches miss.
+					// MiMo requires reasoning_content to be non-empty (otherwise 400),
+					// but a meaningful placeholder like "[reasoning]" gets echoed back
+					// by the model in subsequent turns, polluting the thinking output.
+					assistantMessage.reasoning_content = reasoningContent || " ";
 				}
 
 				if (toolCalls.length > 0) {

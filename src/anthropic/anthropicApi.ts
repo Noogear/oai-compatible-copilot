@@ -183,9 +183,13 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 					thinkingContent = lastReasoningContent;
 				}
 
-				contentBlocks.push({
-					type: "thinking",
-					thinking: thinkingContent || "[reasoning]",
+					// Use a single space as placeholder when all caches miss.
+					// MiMo requires thinking content to be non-empty (otherwise 400),
+					// but a meaningful placeholder like "[reasoning]" gets echoed back
+					// by the model in subsequent turns, polluting the thinking output.
+					contentBlocks.push({
+						type: "thinking",
+						thinking: thinkingContent || " ",
 				});
 			}
 
